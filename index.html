@@ -1,23 +1,62 @@
 <!doctype html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <title>wormholio</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      * { margin: 0; padding: 0; box-sizing: border-box; cursor: default; }
       body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
+      
+      a, button {
+        cursor: pointer !important;
+      }
+      
+      input[type="text"] {
+        border: none;
+        background: lime;
+        color: green;
+        cursor: text !important;
+        font-size: 32pt;
+        padding: 10px;
+      }
+      input[type="text"]:disabled {
+        background: green;
+        color: lime;
+      }
+      
+      button {
+        border: none;
+        background: pink;
+        color: maroon;
+        font-size: 32pt;
+        padding: 10px;
+      }
+      button:disabled {
+        background: maroon;
+        color: pink;
+      }
+      
+      .container {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        /* bring your own prefixes */
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      
+      #me {
+        text-align: right;
+      }
     </style>
   </head>
   <body>
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
+      <div class="container">
+        <h1>wormholio</h1>
+        <form action="">
+          <input type="text" id="me" autocomplete="off" maxlength="7" size="7" disabled="disabled"></input> <button id="connect" disabled="disabled">open</button> <input type="text" id="them" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
+        </form>
+        <div id="messages">loading...</div>
+      </div>
   </body>
 
 
@@ -25,13 +64,50 @@
 <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
   var socket = io();
-  $('form').submit(function(){
-    socket.emit('chat message', $('#m').val());
-    $('#m').val('');
+  var connectedTo = null;
+  $('form').submit(function() {
+    if (connectedTo === null) {
+      socket.emit('establish portal', $('#them').val());
+      $('#them').attr('disabled', 'disabled'); 
+      $('#connect').attr('disabled', 'disabled'); 
+    }
+    else {
+      socket.emit('close portal');
+      $('#connect').attr('disabled', 'disabled'); 
+    }
     return false;
   });
-  socket.on('chat message', function(msg){
-    $('#messages').append($('<li>').text(msg));
+  socket.on('initialize', function(name) {
+    $('#messages').text('ready');
+    $('#me').val(name);
+    $('#them').removeAttr('disabled');
+    $('#connect').removeAttr('disabled');
+  });
+  
+  socket.on('establish portal', function(other) {
+    $('#m').val(other);
+    $('#m').attr('disabled', 'disabled');
+    $('#messages').text('wormhole open');
+    $('#connect').removeAttr('disabled');
+    $('#connect').text('close');
+    connectedTo = other;
+  });
+  
+  socket.on('close portal', function(other) {
+    $('#messages').text('wormhole closed');
+    $('#connect').removeAttr('disabled');
+    $('#connect').text('open');
+    $('#them').val('');
+    $('#them').removeAttr('disabled');
+    connectedTo = null;
+  });
+  socket.on('whoops', function(msg) {
+    $('#messages').text('a non-Euclidean explosion occurred somewhere in the multiverse');
+    $('#connect').removeAttr('disabled');
+    $('#connect').text('open');
+    $('#them').val('');
+    $('#them').removeAttr('disabled');
+    connectedTo = null;
   });
 </script>
 
