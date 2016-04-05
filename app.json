@@ -1,0 +1,7 @@
+{
+  "name": "wormholio",
+  "description": "blast files between web browsers",
+  "repository": "https://github.com/adamrezich/wormholio",
+  "logo": "http://node-js-sample.herokuapp.com/node.svg",
+  "keywords": ["node", "express", "static", "portals"]
+}
