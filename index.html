@@ -4,7 +4,7 @@
     <title>wormholio</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; cursor: default; }
-      body { font: 13px Helvetica, Arial; }
+      body { margin: 0; padding: 0; font: 13px Helvetica, Arial; }
       
       a, button {
         cursor: pointer !important;
@@ -15,8 +15,9 @@
         background: lime;
         color: green;
         cursor: text !important;
-        font-size: 32pt;
+        font-size: 24pt;
         padding: 10px;
+        font-family: monospace;
       }
       input[type="text"]:disabled {
         background: green;
@@ -27,8 +28,12 @@
         border: none;
         background: pink;
         color: maroon;
-        font-size: 32pt;
+        font-size: 24pt;
         padding: 10px;
+        height: 90px;
+        width: 90px;
+        text-align: center;
+        border-radius: 45px;
       }
       button:disabled {
         background: maroon;
@@ -42,21 +47,49 @@
         /* bring your own prefixes */
         transform: translate(-50%, -50%);
         text-align: center;
+        min-width: 600px;
       }
       
       #me {
         text-align: right;
       }
+      
+      #drop {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+      
+      .dropped {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        opacity: 1;
+        transition: opacity 1s;
+      }
+      
+      .dropped-fade {
+        opacity: 0 !important;
+      }
+      
+      #downloader {
+        display: none;
+      }
     </style>
   </head>
   <body>
-      <div class="container">
-        <h1>wormholio</h1>
-        <form action="">
-          <input type="text" id="me" autocomplete="off" maxlength="7" size="7" disabled="disabled"></input> <button id="connect" disabled="disabled">open</button> <input type="text" id="them" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
-        </form>
-        <div id="messages">loading...</div>
-      </div>
+    <div id="drop"></div>
+    <div class="container">
+      <h1>wormholio</h1>
+      <form action="">
+        <input type="text" id="me" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
+        <button id="connect" disabled="disabled">open</button>
+        <input type="text" id="them" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
+      </form>
+      <div id="messages">loading...</div>
+    </div>
+    <iframe id="downloader"></iframe>
   </body>
 
 
@@ -65,11 +98,22 @@
 <script>
   var socket = io();
   var connectedTo = null;
+  var whoops = [
+    'a non-Euclidean explosion occurred somewhere in the multiverse',
+    'you did something horribly wrong',
+    'what were you even trying to do',
+    'a portal almost opens, but then doesn\'t'
+  ];
   $('form').submit(function() {
     if (connectedTo === null) {
+      if ($('#them').val() === "") {
+        $('#messages').text('enter a destination first');
+      }
+      else {
       socket.emit('establish portal', $('#them').val());
-      $('#them').attr('disabled', 'disabled'); 
-      $('#connect').attr('disabled', 'disabled'); 
+        $('#them').attr('disabled', 'disabled'); 
+        $('#connect').attr('disabled', 'disabled'); 
+      }
     }
     else {
       socket.emit('close portal');
@@ -85,16 +129,16 @@
   });
   
   socket.on('establish portal', function(other) {
-    $('#m').val(other);
-    $('#m').attr('disabled', 'disabled');
-    $('#messages').text('wormhole open');
+    $('#them').val(other);
+    $('#them').attr('disabled', 'disabled');
+    $('#messages').text('portal open');
     $('#connect').removeAttr('disabled');
     $('#connect').text('close');
     connectedTo = other;
   });
   
   socket.on('close portal', function(other) {
-    $('#messages').text('wormhole closed');
+    $('#messages').text('portal closed');
     $('#connect').removeAttr('disabled');
     $('#connect').text('open');
     $('#them').val('');
@@ -102,12 +146,65 @@
     connectedTo = null;
   });
   socket.on('whoops', function(msg) {
-    $('#messages').text('a non-Euclidean explosion occurred somewhere in the multiverse');
+    $('#messages').text(whoops[Math.floor(Math.random() * whoops.length)]);
     $('#connect').removeAttr('disabled');
     $('#connect').text('open');
     $('#them').val('');
     $('#them').removeAttr('disabled');
     connectedTo = null;
+  });
+  
+  socket.on('download', function(file) {
+    if (typeof location.origin === 'undefined')
+      location.origin = location.protocol + '//' + location.host;
+    document.getElementById('downloader').src = location.origin + '/' + file;
+  });
+  
+  var dropZone = document.getElementById('drop');
+  
+  var mouseX = 0;
+  var mouseY = 0;
+  
+  $(document).on("mousemove", function(event) {
+    mouseX = event.pageX;
+    mouseY = event.pageY;
+  });
+
+  // Optional.   Show the copy icon when dragging over.  Seems to only work for chrome.
+  dropZone.addEventListener('dragover', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  // Get file data on drop
+  dropZone.addEventListener('drop', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    if (connectedTo) {
+      var files = e.target.files || e.dataTransfer.files;
+      //for (var i = 0, file; file = files[i]; ++i) {
+      var file = files[0];
+        var reader = new FileReader();
+        reader.onload = function(e2) { // finished reading file data.
+          var buffer = e2.target.result;
+          if (file.type.match(/image.*/)) {
+            var img = $('<img>');
+            //img.attr('src', buffer);
+            img.css({ 'left': mouseX + 'px', 'top': mouseY + 'px' });
+            $('body').append(img);
+            img.addClass('dropped');
+            setTimeout(function () { img.addClass('dropped-fade'); }, 1000);
+          }
+          socket.emit('upload', file.name, buffer); // send the content via socket
+        }
+        reader.readAsBinaryString(file);
+        //reader.readAsDataURL(file);
+      //}
+    }
+    else {
+      
+    }
   });
 </script>
 

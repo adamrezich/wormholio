@@ -1,14 +1,46 @@
 "use strict";
 
-var app = require('express')();
+var express = require('express');
+var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var shortid = require('shortid');
+var fs = require('fs'); 
+var mkdirp = require('mkdirp');
+//var serveStatic = require('serve-static');
+var fileExists = require('file-exists');
 
 var users = {};
 
+var dir = 'public';
+
+mkdirp(__dirname + '/' + dir);
+
+
 app.get('/', function(req, res) {
   res.sendFile('index.html', { root: __dirname });
+});
+
+
+/*app.use('/' + dir, serveStatic(__dirname + '/' + dir, {
+  setHeaders: function (res) { res.setHeader('Content-Disposition', 'attachment') }
+}));*/
+app.get('/' + dir + '/*', function(req, res) {
+  let file = __dirname + req.url;
+  
+  if (fileExists(file)) {
+
+    res.download(file, req.params[0], function(err) {
+      if (!err) {
+        fs.unlink(file);
+      }
+      else {
+        console.log(err);
+      }
+    });
+  }
+  else
+    res.status(404).send();
 });
 
 io.on('connection', function(socket) {
@@ -30,7 +62,7 @@ io.on('connection', function(socket) {
   
   socket.on('establish portal', function(other) {
     if (other == name) {
-      socket.emit('whoops', 'lol nice try idiot (establish)');
+      socket.emit('whoops', 'lol nice try idiot');
     }
     else if (users[other] !== undefined && users[other].connectedTo === null) {
       users[other].connectedTo = name;
@@ -45,9 +77,8 @@ io.on('connection', function(socket) {
   
   socket.on('close portal', function() {
     let connectedTo = users[name].connectedTo;
-    console.log('>> ' + connectedTo);
     if (connectedTo === null) {
-      socket.emit('whoops', 'lol nice try idiot (close)');
+      socket.emit('whoops', 'lol nice try idiot');
     }
     else if (users[connectedTo] !== undefined) {
       io.sockets.connected[users[connectedTo].socket].emit('close portal', name);
@@ -56,6 +87,27 @@ io.on('connection', function(socket) {
       users[name].connectedTo = null;
     }
     else {
+      socket.emit('whoops');
+    }
+  });
+  
+  socket.on('upload', function(filename, buffer) {
+    let connectedTo = users[name].connectedTo;
+    let fullFilename = __dirname + '/' + dir + '/' + filename;
+    
+    if (connectedTo !== null) {
+      fs.open(fullFilename, 'a', 777, function(err, fd) {
+        if (err) throw err;
+        fs.write(fd, buffer, null, 'Binary', function(err, written, buff) {
+          fs.close(fd, function() {
+            console.log('uploaded ' + filename);
+            io.sockets.connected[users[connectedTo].socket].emit('download', dir + '/' + filename);
+          })
+        })
+      });
+    }
+    else {
+      fs.unlink(fullFilename);
       socket.emit('whoops');
     }
   });
