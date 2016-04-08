@@ -2,6 +2,53 @@
 <html>
   <head>
     <title>wormholio</title>
+    
+    <!-- reset.css -->
+    <style type="text/css">
+      html, body, div, span, applet, object, iframe,
+      h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+      a, abbr, acronym, address, big, cite, code,
+      del, dfn, em, img, ins, kbd, q, s, samp,
+      small, strike, strong, sub, sup, tt, var,
+      b, u, i, center,
+      dl, dt, dd, ol, ul, li,
+      fieldset, form, label, legend,
+      table, caption, tbody, tfoot, thead, tr, th, td,
+      article, aside, canvas, details, embed, 
+      figure, figcaption, footer, header, hgroup, 
+      menu, nav, output, ruby, section, summary,
+      time, mark, audio, video {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        font-size: 100%;
+        font: inherit;
+        vertical-align: baseline;
+      }
+      /* HTML5 display-role reset for older browsers */
+      article, aside, details, figcaption, figure, 
+      footer, header, hgroup, menu, nav, section {
+        display: block;
+      }
+      body {
+        line-height: 1;
+      }
+      ol, ul {
+        list-style: none;
+      }
+      blockquote, q {
+        quotes: none;
+      }
+      blockquote:before, blockquote:after,
+      q:before, q:after {
+        content: '';
+        content: none;
+      }
+      table {
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
+    </style>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; cursor: default; }
       body { margin: 0; padding: 0; font: 13px Helvetica, Arial; }
@@ -76,6 +123,20 @@
       #downloader {
         display: none;
       }
+      
+      #todo {
+        position: static;
+        margin: 0.5em 2em;
+      }
+      h1 {
+        font-size: 24pt;
+      }
+      h2 {
+        font-size: 18pt;
+      }
+      ul {
+        list-style-type: square !important;
+      }
     </style>
   </head>
   <body>
@@ -88,6 +149,20 @@
         <input type="text" id="them" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
       </form>
       <div id="messages">loading...</div>
+    </div>
+    <div id="todo">
+      <h2>todo</h2>
+      <ul>
+        <li>move HTML to Jade</li>
+        <li>move CSS to Sass</li>
+        <li>check file size on client</li>
+        <li>check file size on server</li>
+        <li>auto-delete files after a couple minutes of not being used</li>
+        <li>load a thumbnail of the file in before uploading (image data if image, otherwise generic icon)</li>
+        <li>make cool wormhole animation thing</li>
+        <li>make files swirl into the middle of the wormhole when dropped</li>
+        <li>better CSS</li>
+      </ul>
     </div>
     <iframe id="downloader"></iframe>
   </body>
