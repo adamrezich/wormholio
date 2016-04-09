@@ -133,21 +133,26 @@
       
       #todo {
         position: static;
-        margin: 0.5em 2em;
+        margin: 0.5em 1em;
         color: #444;
+        font-size: 8pt;
       }
       h1 {
         font-size: 24pt;
         color: #555;
       }
       h2 {
-        font-size: 18pt;
+        margin-top: 8px;
+        font-size: 12pt;
       }
       ul {
         list-style-type: square !important;
       }
+      ul li {
+        margin-left: 20px;
+      }
       #messages {
-        color: #333;
+        color: #999;
       }
       canvas {
         position: fixed;
@@ -170,6 +175,20 @@
       <div id="messages">loading...</div>
     </div>
     <div id="todo">
+      <h2>explanation</h2>
+      <p>wormholio is a simple but soon-to-be-beautiful single-page web app to blast files between web browsers</p>
+      <ul>
+        <li>open wormholio in one browser, then open it in another browser window, another browser, or even another computer</li>
+        <li>input one browser's code (on the left) into the other browser's input box (on the right) and press "open"</li>
+        <li>drag files into one wormholio window and watch as it shoots out the other, magically</li>
+      </ul>
+      <h2>warnings</h2>
+      <ul>
+        <li>please don't try and break my website just yet. it's still very early and I haven't put protections in place yet</li>
+        <li>large files will totally break everything. don't do it</li>
+        <li>trying to send multiple files at once will probably break things, too. eventually I'll add support for this (it'll zip them on the receiving end)</li>
+        <li>there's hella exploits to leave your files on the server forever right now. please don't abuse them</li>
+      </ul>
       <h2>todo</h2>
       <ul>
         <li>move HTML to Jade</li>
@@ -184,6 +203,8 @@
         <li>allow multiple files at once (zip on server-side?)</li>
         <li>demonstrate that you can't drop the file when you're not connected</li>
         <li>track files per user and trash them if the user (or his connectedTo) disconnects</li>  
+        <li>make wormhol.io/abcd123 URLs link directly to portal openings</li>
+        <li>things will be more beautiful</li>
       </ul>
     </div>
     <iframe id="downloader"></iframe>
@@ -1605,7 +1626,7 @@ else {
     return false;
   });
   socket.on('initialize', function(name) {
-    $('#messages').text('ready');
+    $('#messages').text('a website by adam rezich');
     $('#me').val(name);
     $('#them').removeAttr('disabled');
     $('#connect').removeAttr('disabled');
@@ -1699,7 +1720,7 @@ else {
 var canvas = document.getElementById('wormhole');
 var ctx = canvas.getContext('2d');
 
-var radMin = 20;
+var radMin = 40;
 var radMax = 200;
 var angSpeedMin = 0.0003;
 var angSpeedMax = 0.0014;
