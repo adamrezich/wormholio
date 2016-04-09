@@ -28,11 +28,11 @@ app.get('/', function(req, res) {
   setHeaders: function (res) { res.setHeader('Content-Disposition', 'attachment') }
 }));*/
 app.get('/' + dir + '/*', function(req, res) {
-  let file = __dirname + req.url;
+  let file = __dirname + decodeURI(req.url);
   
   if (fileExists(file)) {
 
-    res.download(file, req.params[0], function(err) {
+    res.download(file, decodeURI(req.params[0]), function(err) {
       if (!err) {
         fs.unlink(file);
       }

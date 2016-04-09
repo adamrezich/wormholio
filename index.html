@@ -48,6 +48,10 @@
         border-collapse: collapse;
         border-spacing: 0;
       }
+      
+      input:focus {
+        outline: none;
+      }
     </style>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; cursor: default; }
@@ -58,33 +62,36 @@
       }
       
       input[type="text"] {
-        border: none;
-        background: lime;
-        color: green;
+        background: radial-gradient(ellipse at center, #ccc 0%, #ddd 100%);
+        border: 4px solid #d3d3d3;
+        color: #999;
         cursor: text !important;
         font-size: 24pt;
         padding: 10px;
         font-family: monospace;
       }
       input[type="text"]:disabled {
-        background: green;
-        color: lime;
+        background: radial-gradient(ellipse at center, #aaa 0%, #bbb 100%);
+        border: 4px solid #b3b3b3;
+        color: #777;
       }
       
       button {
         border: none;
-        background: pink;
-        color: maroon;
+        background: radial-gradient(ellipse at center, #777 0%, #999 100%);
+        border: 4px solid #999;
+        color: #bbb;
         font-size: 24pt;
-        padding: 10px;
         height: 90px;
         width: 90px;
-        text-align: center;
         border-radius: 45px;
+        text-align: center;
+        padding: auto;
       }
-      button:disabled {
-        background: maroon;
-        color: pink;
+      button:hover, button:disabled {
+        border: 4px solid #aaa;
+        background: radial-gradient(ellipse at center, #888 0%, #aaa 100%);
+        color: #ccc;
       }
       
       .container {
@@ -113,11 +120,11 @@
         position: absolute;
         transform: translate(-50%, -50%);
         opacity: 1;
-        transition: opacity 1s;
-      }
-      
-      .dropped-fade {
-        opacity: 0 !important;
+        background: red;
+        width: auto;
+        height: auto;
+        max-width: 500px;
+        max-height: 500px;
       }
       
       #downloader {
@@ -127,9 +134,11 @@
       #todo {
         position: static;
         margin: 0.5em 2em;
+        color: #444;
       }
       h1 {
         font-size: 24pt;
+        color: #555;
       }
       h2 {
         font-size: 18pt;
@@ -137,9 +146,19 @@
       ul {
         list-style-type: square !important;
       }
+      #messages {
+        color: #333;
+      }
+      canvas {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: -1000;
+      }
     </style>
   </head>
   <body>
+    <canvas id="wormhole">Error, canvas is not supported</canvas>
     <div id="drop"></div>
     <div class="container">
       <h1>wormholio</h1>
@@ -161,7 +180,10 @@
         <li>load a thumbnail of the file in before uploading (image data if image, otherwise generic icon)</li>
         <li>make cool wormhole animation thing</li>
         <li>make files swirl into the middle of the wormhole when dropped</li>
-        <li>better CSS</li>
+        <li>better CSS/animations/layout</li>
+        <li>allow multiple files at once (zip on server-side?)</li>
+        <li>demonstrate that you can't drop the file when you're not connected</li>
+        <li>track files per user and trash them if the user (or his connectedTo) disconnects</li>  
       </ul>
     </div>
     <iframe id="downloader"></iframe>
@@ -171,6 +193,213 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
+  /*
+   * jQuery Easing v1.3 - http://gsgd.co.uk/sandbox/jquery/easing/
+   *
+   * Uses the built in easing capabilities added In jQuery 1.1
+   * to offer multiple easing options
+   *
+   * TERMS OF USE - jQuery Easing
+   * 
+   * Open source under the BSD License. 
+   * 
+   * Copyright Â© 2008 George McGinley Smith
+   * All rights reserved.
+   * 
+   * Redistribution and use in source and binary forms, with or without modification, 
+   * are permitted provided that the following conditions are met:
+   * 
+   * Redistributions of source code must retain the above copyright notice, this list of 
+   * conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above copyright notice, this list 
+   * of conditions and the following disclaimer in the documentation and/or other materials 
+   * provided with the distribution.
+   * 
+   * Neither the name of the author nor the names of contributors may be used to endorse 
+   * or promote products derived from this software without specific prior written permission.
+   * 
+   * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
+   * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+   * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+   *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+   *  GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED 
+   * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED 
+   * OF THE POSSIBILITY OF SUCH DAMAGE. 
+   *
+  */
+
+  // t: current time, b: begInnIng value, c: change In value, d: duration
+  jQuery.easing['jswing'] = jQuery.easing['swing'];
+
+  jQuery.extend( jQuery.easing,
+  {
+    def: 'easeOutQuad',
+    swing: function (x, t, b, c, d) {
+      //alert(jQuery.easing.default);
+      return jQuery.easing[jQuery.easing.def](x, t, b, c, d);
+    },
+    easeInQuad: function (x, t, b, c, d) {
+      return c*(t/=d)*t + b;
+    },
+    easeOutQuad: function (x, t, b, c, d) {
+      return -c *(t/=d)*(t-2) + b;
+    },
+    easeInOutQuad: function (x, t, b, c, d) {
+      if ((t/=d/2) < 1) return c/2*t*t + b;
+      return -c/2 * ((--t)*(t-2) - 1) + b;
+    },
+    easeInCubic: function (x, t, b, c, d) {
+      return c*(t/=d)*t*t + b;
+    },
+    easeOutCubic: function (x, t, b, c, d) {
+      return c*((t=t/d-1)*t*t + 1) + b;
+    },
+    easeInOutCubic: function (x, t, b, c, d) {
+      if ((t/=d/2) < 1) return c/2*t*t*t + b;
+      return c/2*((t-=2)*t*t + 2) + b;
+    },
+    easeInQuart: function (x, t, b, c, d) {
+      return c*(t/=d)*t*t*t + b;
+    },
+    easeOutQuart: function (x, t, b, c, d) {
+      return -c * ((t=t/d-1)*t*t*t - 1) + b;
+    },
+    easeInOutQuart: function (x, t, b, c, d) {
+      if ((t/=d/2) < 1) return c/2*t*t*t*t + b;
+      return -c/2 * ((t-=2)*t*t*t - 2) + b;
+    },
+    easeInQuint: function (x, t, b, c, d) {
+      return c*(t/=d)*t*t*t*t + b;
+    },
+    easeOutQuint: function (x, t, b, c, d) {
+      return c*((t=t/d-1)*t*t*t*t + 1) + b;
+    },
+    easeInOutQuint: function (x, t, b, c, d) {
+      if ((t/=d/2) < 1) return c/2*t*t*t*t*t + b;
+      return c/2*((t-=2)*t*t*t*t + 2) + b;
+    },
+    easeInSine: function (x, t, b, c, d) {
+      return -c * Math.cos(t/d * (Math.PI/2)) + c + b;
+    },
+    easeOutSine: function (x, t, b, c, d) {
+      return c * Math.sin(t/d * (Math.PI/2)) + b;
+    },
+    easeInOutSine: function (x, t, b, c, d) {
+      return -c/2 * (Math.cos(Math.PI*t/d) - 1) + b;
+    },
+    easeInExpo: function (x, t, b, c, d) {
+      return (t==0) ? b : c * Math.pow(2, 10 * (t/d - 1)) + b;
+    },
+    easeOutExpo: function (x, t, b, c, d) {
+      return (t==d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+    },
+    easeInOutExpo: function (x, t, b, c, d) {
+      if (t==0) return b;
+      if (t==d) return b+c;
+      if ((t/=d/2) < 1) return c/2 * Math.pow(2, 10 * (t - 1)) + b;
+      return c/2 * (-Math.pow(2, -10 * --t) + 2) + b;
+    },
+    easeInCirc: function (x, t, b, c, d) {
+      return -c * (Math.sqrt(1 - (t/=d)*t) - 1) + b;
+    },
+    easeOutCirc: function (x, t, b, c, d) {
+      return c * Math.sqrt(1 - (t=t/d-1)*t) + b;
+    },
+    easeInOutCirc: function (x, t, b, c, d) {
+      if ((t/=d/2) < 1) return -c/2 * (Math.sqrt(1 - t*t) - 1) + b;
+      return c/2 * (Math.sqrt(1 - (t-=2)*t) + 1) + b;
+    },
+    easeInElastic: function (x, t, b, c, d) {
+      var s=1.70158;var p=0;var a=c;
+      if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
+      if (a < Math.abs(c)) { a=c; var s=p/4; }
+      else var s = p/(2*Math.PI) * Math.asin (c/a);
+      return -(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b;
+    },
+    easeOutElastic: function (x, t, b, c, d) {
+      var s=1.70158;var p=0;var a=c;
+      if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
+      if (a < Math.abs(c)) { a=c; var s=p/4; }
+      else var s = p/(2*Math.PI) * Math.asin (c/a);
+      return a*Math.pow(2,-10*t) * Math.sin( (t*d-s)*(2*Math.PI)/p ) + c + b;
+    },
+    easeInOutElastic: function (x, t, b, c, d) {
+      var s=1.70158;var p=0;var a=c;
+      if (t==0) return b;  if ((t/=d/2)==2) return b+c;  if (!p) p=d*(.3*1.5);
+      if (a < Math.abs(c)) { a=c; var s=p/4; }
+      else var s = p/(2*Math.PI) * Math.asin (c/a);
+      if (t < 1) return -.5*(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )) + b;
+      return a*Math.pow(2,-10*(t-=1)) * Math.sin( (t*d-s)*(2*Math.PI)/p )*.5 + c + b;
+    },
+    easeInBack: function (x, t, b, c, d, s) {
+      if (s == undefined) s = 1.70158;
+      return c*(t/=d)*t*((s+1)*t - s) + b;
+    },
+    easeOutBack: function (x, t, b, c, d, s) {
+      if (s == undefined) s = 1.70158;
+      return c*((t=t/d-1)*t*((s+1)*t + s) + 1) + b;
+    },
+    easeInOutBack: function (x, t, b, c, d, s) {
+      if (s == undefined) s = 1.70158; 
+      if ((t/=d/2) < 1) return c/2*(t*t*(((s*=(1.525))+1)*t - s)) + b;
+      return c/2*((t-=2)*t*(((s*=(1.525))+1)*t + s) + 2) + b;
+    },
+    easeInBounce: function (x, t, b, c, d) {
+      return c - jQuery.easing.easeOutBounce (x, d-t, 0, c, d) + b;
+    },
+    easeOutBounce: function (x, t, b, c, d) {
+      if ((t/=d) < (1/2.75)) {
+        return c*(7.5625*t*t) + b;
+      } else if (t < (2/2.75)) {
+        return c*(7.5625*(t-=(1.5/2.75))*t + .75) + b;
+      } else if (t < (2.5/2.75)) {
+        return c*(7.5625*(t-=(2.25/2.75))*t + .9375) + b;
+      } else {
+        return c*(7.5625*(t-=(2.625/2.75))*t + .984375) + b;
+      }
+    },
+    easeInOutBounce: function (x, t, b, c, d) {
+      if (t < d/2) return jQuery.easing.easeInBounce (x, t*2, 0, c, d) * .5 + b;
+      return jQuery.easing.easeOutBounce (x, t*2-d, 0, c, d) * .5 + c*.5 + b;
+    }
+  });
+
+  /*
+   *
+   * TERMS OF USE - EASING EQUATIONS
+   * 
+   * Open source under the BSD License. 
+   * 
+   * Copyright Â© 2001 Robert Penner
+   * All rights reserved.
+   * 
+   * Redistribution and use in source and binary forms, with or without modification, 
+   * are permitted provided that the following conditions are met:
+   * 
+   * Redistributions of source code must retain the above copyright notice, this list of 
+   * conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above copyright notice, this list 
+   * of conditions and the following disclaimer in the documentation and/or other materials 
+   * provided with the distribution.
+   * 
+   * Neither the name of the author nor the names of contributors may be used to endorse 
+   * or promote products derived from this software without specific prior written permission.
+   * 
+   * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
+   * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+   * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+   *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+   *  GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED 
+   * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED 
+   * OF THE POSSIBILITY OF SUCH DAMAGE. 
+   *
+   */
+</script>
+<script>
   var socket = io();
   var connectedTo = null;
   var whoops = [
@@ -179,6 +408,11 @@
     'what were you even trying to do',
     'a portal almost opens, but then doesn\'t'
   ];
+  
+  function showError() {
+    $('#messages').text(whoops[Math.floor(Math.random() * whoops.length)]);
+  }
+  
   $('form').submit(function() {
     if (connectedTo === null) {
       if ($('#them').val() === "") {
@@ -186,7 +420,7 @@
       }
       else {
       socket.emit('establish portal', $('#them').val());
-        $('#them').attr('disabled', 'disabled'); 
+        $('#them').attr('disabled', 'disabled');
         $('#connect').attr('disabled', 'disabled'); 
       }
     }
@@ -221,7 +455,7 @@
     connectedTo = null;
   });
   socket.on('whoops', function(msg) {
-    $('#messages').text(whoops[Math.floor(Math.random() * whoops.length)]);
+    showError();
     $('#connect').removeAttr('disabled');
     $('#connect').text('open');
     $('#them').val('');
@@ -239,6 +473,9 @@
   
   var mouseX = 0;
   var mouseY = 0;
+  
+  var centerX = 0;
+  var centerY = 0;
   
   $(document).on("mousemove", function(event) {
     mouseX = event.pageX;
@@ -266,10 +503,12 @@
           if (file.type.match(/image.*/)) {
             var img = $('<img>');
             //img.attr('src', buffer);
+            img.attr('src', 'data:image/png;base64,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');
             img.css({ 'left': mouseX + 'px', 'top': mouseY + 'px' });
             $('body').append(img);
             img.addClass('dropped');
-            setTimeout(function () { img.addClass('dropped-fade'); }, 1000);
+            img.animate({'left': centerX + 'px', 'top': centerY + 'px', 'max-height': 0, 'max-width': 0 }, 1500, 'easeOutElastic')
+            setTimeout(function () { img.fadeOut(800, function() { $(this).remove(); }); }, 200);
           }
           socket.emit('upload', file.name, buffer); // send the content via socket
         }
@@ -278,9 +517,144 @@
       //}
     }
     else {
-      
+      showError();
     }
   });
+
+  
+var canvas = document.getElementById('wormhole');
+var ctx = canvas.getContext('2d');
+
+var radMin = 20;
+var radMax = 200;
+var angSpeedMin = 0.0003;
+var angSpeedMax = 0.005;
+var distMax = 0;
+var distEndMin = 10;
+var distEndMax = 30;
+var distSpeedMin = 5;
+var distSpeedMax = 12;
+var circSpawnMin = 1;
+var circSpawnMax = 3;
+
+function HSVtoRGB(h, s, v) {
+  var r, g, b, i, f, p, q, t;
+  if (h && s === undefined && v === undefined) {
+      s = h.s, v = h.v, h = h.h;
+  }
+  i = Math.floor(h * 6);
+  f = h * 6 - i;
+  p = v * (1 - s);
+  q = v * (1 - f * s);
+  t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+    case 0: r = v, g = t, b = p; break;
+    case 1: r = q, g = v, b = p; break;
+    case 2: r = p, g = v, b = t; break;
+    case 3: r = p, g = q, b = v; break;
+    case 4: r = t, g = p, b = v; break;
+    case 5: r = v, g = p, b = q; break;
+  }
+	//return [ Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255) ];
+  return 'rgb(' + Math.floor(r * 255) + ', ' + Math.floor(g * 255) + ', ' + Math.floor(b * 255) + ')';
+}
+
+
+function findCenter() {
+  centerX = Math.floor(window.innerWidth / 2);
+  centerY = Math.floor(window.innerWidth / 2);
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  distMax = (canvas.width > canvas.height ? canvas.width / 2 : canvas.height / 2) + radMax * Math.PI;
+}
+
+$(window).resize(function() {
+  findCenter();
+});
+
+$(function() {
+  findCenter();
+});
+
+window.requestAnimationFrame = window.requestAnimationFrame || function(callback){ window.setTimeout(callback, 16) };
+
+whCirc = function(ang, dist, rad) {
+  this.ang = ang;
+  this.dist = dist;
+  this.angSpeed = angSpeedMin + Math.random() * (angSpeedMax - angSpeedMin) * (1 + Math.sin(+new Date()));
+  this.distSpeed = distSpeedMin + Math.random() * (distSpeedMax - distSpeedMin);
+  this.radMax = rad;
+  this.rad = rad;
+  this.x = 0;
+  this.y = 0;
+  this.strokeStyle = 'rgb(' + Math.round(Math.random() * 255) + ', ' + Math.round(Math.random() * 255) + ', ' + Math.round(Math.random() * 255) + ')';
+  this.alpha = 1;
+}
+
+var whCircs = [];
+
+engine = function() {
+  this.frameCount = 0;
+  self = this;
+
+  this.update = function() {
+    //loop over your objects and run each objects update function
+    for (let i = 0; i < Math.floor(Math.random() * (circSpawnMax - circSpawnMin)) + circSpawnMin; ++i)
+      whCircs.push(new whCirc(Math.random() * Math.PI * 2, distMax, radMin + Math.random() * (radMax - radMin)));
+    
+    let i = whCircs.length;
+    while (i--) {
+      let amt = whCircs[i].dist / distMax;
+      let amtSq = Math.sqrt(amt);
+      whCircs[i].dist -= amtSq * whCircs[i].distSpeed;
+      whCircs[i].ang -= Math.abs(3.5 - amt) * whCircs[i].angSpeed;
+      whCircs[i].rad = amt * whCircs[i].radMax;
+      whCircs[i].alpha = amtSq;
+      
+      if (whCircs[i].dist < 10) {
+        whCircs.splice(i, 1);
+        continue;
+      }
+      
+      whCircs[i].x = canvas.width / 2 + Math.cos(whCircs[i].ang) * whCircs[i].dist;
+      whCircs[i].y = canvas.height / 2 + Math.sin(whCircs[i].ang) * whCircs[i].dist;
+    };
+  }
+
+  this.render = function() {
+    
+    var gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width > canvas.height ? canvas.width / 2 : canvas.height / 2);
+    gradient.addColorStop(0, 'rgb(255, 255, 255)');
+    gradient.addColorStop(1, 'rgb(200, 200, 200)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    
+    for (let i = 0; i < whCircs.length; ++i) {
+      let theta = 0;
+      let dist = 10;
+      let ox = (canvas.width / 2) + Math.cos(theta) * dist;
+      let oy = (canvas.height / 2) + Math.sin(theta) * dist;
+      ctx.globalAlpha = whCircs[i].alpha;
+      ctx.strokeStyle = whCircs[i].strokeStyle;
+      ctx.beginPath();
+      ctx.arc(whCircs[i].x, whCircs[i].y, whCircs[i].rad, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  this.frame = function() {
+    self.update();
+    self.render();
+    self.frameCount++;
+    window.requestAnimationFrame(frame);
+  }
+  
+  this.frame();
+};
+engine();
 </script>
 
 
