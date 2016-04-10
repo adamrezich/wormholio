@@ -11,7 +11,7 @@ function showError() {
   $('#messages').text(whoops[Math.floor(Math.random() * whoops.length)]);
 }
 
-$('form').submit(function() {
+function connect() {
   if (connectedTo === null) {
     if ($('#them').val() === "") {
       $('#messages').text('enter a destination first');
@@ -26,14 +26,26 @@ $('form').submit(function() {
     socket.emit('close portal');
     $('#connect').attr('disabled', 'disabled'); 
   }
+}
+
+$('form').submit(function() {
+  connect();
   return false;
 });
 socket.on('initialize', function(name) {
   $('#messages').text('enter another code above');
   $('#me').val(name);
+  $('h1>strong').text(name);
   $('#them').removeAttr('disabled');
   $('#connect').removeAttr('disabled');
-  $('#them').focus();
+  let val = $('#them').val();
+  if (val !== '' && val.length == 7) {
+    connect();
+  }
+  else {
+    $('#them').val('');
+    $('#them').focus();
+  }
 });
 
 socket.on('establish portal', function(other) {

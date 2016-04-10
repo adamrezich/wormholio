@@ -94,8 +94,10 @@ h1 {
   font-size: 36pt;
   color: #555;
   letter-spacing: 3px;
+  font-weight: 300;
+}
+h1 > em, h1 > strong {
   font-weight: 200;
-  line-height: 75%;
 }
 h2 {
   margin-top: 8px;
@@ -116,4 +118,9 @@ canvas {
   left: 0;
   top: 0;
   z-index: -1000;
+}
+
+s {
+  text-decoration: line-through;
+  color: #999;
 }

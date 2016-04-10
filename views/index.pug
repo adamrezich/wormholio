@@ -10,11 +10,11 @@ html
     canvas(id='wormhole')
     #drop
     .container
-      h1 wormholio
+      h1 <em>http://</em>wormhol.io<em>/</em><strong></strong>
       form(action='')
         input#me(type='text', autocomplete='off', maxlength='7', size='7', disabled='disabled')
         button#connect(disabled='disabled') open
-        input#them(type='text', autocomplete='off', maxlength='7', size='7', disabled='disabled')
+        input#them(type='text', autocomplete='off', maxlength='7', size='7', disabled='disabled', value=code)
       #messages loading...
     #todo
       h2 explanation
@@ -31,7 +31,7 @@ html
         li there's hella exploits to leave your files on the server forever right now. please don't abuse them
       h2 todo
       ul
-        li move HTML to Jade
+        li <s>move HTML to Jade</s>
         li move CSS to Sass
         li check file size on client
         li check file size on server
@@ -43,13 +43,15 @@ html
         li allow multiple files at once (zip on server-side?)
         li demonstrate that you can't drop the file when you're not connected
         li track files per user and trash them if the user (or his connectedTo) disconnects  
-        li make wormhol.io/abcd123 URLs link directly to portal openings
+        li <s>make wormhol.io/abcd123 URLs link directly to portal openings</s>
         li things will be more beautiful
         li make the drag-and-drop div change its z-index to cover everything when you're dragging or some shit, so you can drop your files on text or whatever and it's cool
         li visual indication that files are "on the way" to you
         li other cool effects
+        li layouts that work at different browser window sizes
     iframe#downloader
     script(src='/socket.io/socket.io.js')
     script(src='http://code.jquery.com/jquery-1.11.1.js')
     script(src='/public/tinycolor.js')
+    script(src='/public/easing.js')
     script(src='/public/wormholio.js')
