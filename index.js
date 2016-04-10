@@ -7,26 +7,31 @@ var io = require('socket.io')(http);
 var shortid = require('shortid');
 var fs = require('fs'); 
 var mkdirp = require('mkdirp');
-//var serveStatic = require('serve-static');
+var serveStatic = require('serve-static');
 var fileExists = require('file-exists');
+var pug = require('pug');
 
-app.set('port', (process.env.PORT || 3000));
+app.set('port', (process.env.PORT || 80));
+app.set('view engine', 'pug');
 
 var users = {};
 
-var dir = 'public';
+var dir = 'uploaded';
 
 mkdirp(__dirname + '/' + dir);
 
 
 app.get('/', function(req, res) {
-  res.sendFile('index.html', { root: __dirname });
+  res.render('index', { code: '' });
+});
+
+app.get('/:code', function(req, res) {
+  res.render('index', { code: req.params.code });
 });
 
 
-/*app.use('/' + dir, serveStatic(__dirname + '/' + dir, {
-  setHeaders: function (res) { res.setHeader('Content-Disposition', 'attachment') }
-}));*/
+app.use('/public', serveStatic(__dirname + '/public'));
+
 app.get('/' + dir + '/*', function(req, res) {
   let file = __dirname + decodeURI(req.url);
   
