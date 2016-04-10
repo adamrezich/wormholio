@@ -3,6 +3,12 @@
   <head>
     <title>wormholio</title>
     
+    <!-- google fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Lato:400,300,100,100italic,300italic,400italic,700,900,900italic,700italic' rel='stylesheet' type='text/css'>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    
     <!-- reset.css -->
     <style type="text/css">
       html, body, div, span, applet, object, iframe,
@@ -49,49 +55,51 @@
         border-spacing: 0;
       }
       
-      input:focus {
+      input:focus, button:focus {
         outline: none;
       }
     </style>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; cursor: default; }
-      body { margin: 0; padding: 0; font: 13px Helvetica, Arial; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        cursor: default;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Lato', sans-serif;
+      }
       
       a, button {
         cursor: pointer !important;
       }
       
       input[type="text"] {
-        background: radial-gradient(ellipse at center, #ccc 0%, #ddd 100%);
-        border: 4px solid #d3d3d3;
-        color: #999;
+        border: none;
+        color: #888;
         cursor: text !important;
         font-size: 24pt;
         padding: 10px;
-        font-family: monospace;
+        width: 7em;
       }
       input[type="text"]:disabled {
-        background: radial-gradient(ellipse at center, #aaa 0%, #bbb 100%);
-        border: 4px solid #b3b3b3;
-        color: #777;
+        /*color: #777;*/
       }
       
       button {
         border: none;
-        background: radial-gradient(ellipse at center, #777 0%, #999 100%);
-        border: 4px solid #999;
-        color: #bbb;
+        background: linear-gradient(to right, rgba(200,200,200,1) 0%,rgba(180,180,180,1) 50%,rgba(200,200,200,1) 100%);
+        color: #777;
         font-size: 24pt;
-        height: 90px;
-        width: 90px;
-        border-radius: 45px;
         text-align: center;
-        padding: auto;
+        padding: 10px 40px;
       }
       button:hover, button:disabled {
-        border: 4px solid #aaa;
-        background: radial-gradient(ellipse at center, #888 0%, #aaa 100%);
-        color: #ccc;
+        background: linear-gradient(to right, rgba(200,200,200,1) 0%,rgba(160,160,160,1) 50%,rgba(200,200,200,1) 100%);
+        color: #555;
       }
       
       .container {
@@ -105,7 +113,12 @@
       }
       
       #me {
+        background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%,rgba(200, 200, 200,1) 100%);
         text-align: right;
+      }
+      
+      #them {
+        background: linear-gradient(to left, rgba(255, 255, 255, 0) 0%,rgba(200, 200, 200,1) 100%);
       }
       
       #drop {
@@ -138,8 +151,10 @@
         font-size: 8pt;
       }
       h1 {
-        font-size: 24pt;
+        font-size: 36pt;
         color: #555;
+        letter-spacing: 3px;
+        font-weight: 200;
       }
       h2 {
         margin-top: 8px;
@@ -153,6 +168,7 @@
       }
       #messages {
         color: #999;
+        font-weight: 300;
       }
       canvas {
         position: fixed;
@@ -168,9 +184,7 @@
     <div class="container">
       <h1>wormholio</h1>
       <form action="">
-        <input type="text" id="me" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
-        <button id="connect" disabled="disabled">open</button>
-        <input type="text" id="them" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
+        <input type="text" id="me" autocomplete="off" maxlength="7" size="7" disabled="disabled" /><button id="connect" disabled="disabled">open</button><input type="text" id="them" autocomplete="off" maxlength="7" size="7" disabled="disabled" />
       </form>
       <div id="messages">loading...</div>
     </div>
@@ -1626,10 +1640,11 @@ else {
     return false;
   });
   socket.on('initialize', function(name) {
-    $('#messages').text('a website by adam rezich');
+    $('#messages').text('enter another code above');
     $('#me').val(name);
     $('#them').removeAttr('disabled');
     $('#connect').removeAttr('disabled');
+    $('#them').focus();
   });
   
   socket.on('establish portal', function(other) {
@@ -1735,6 +1750,11 @@ var circSpawnMax = 3;
 var colorOffset = 0;
 var colorOffsetSpeed = 0.005;
 
+var satMin = 0.25;
+var satMax = 0.75;
+var lumMin = 0.25;
+var lumMax = 0.75;
+
 function findCenter() {
   centerX = Math.floor(window.innerWidth / 2);
   centerY = Math.floor(window.innerWidth / 2);
@@ -1762,7 +1782,7 @@ whCirc = function(ang, dist, rad) {
   this.rad = rad;
   this.x = 0;
   this.y = 0;
-  this.strokeStyle = tinycolor({ h: ((this.ang + colorOffset) % Math.PI * 2) / Math.PI * 180, s: 0.25 + 0.5 * Math.random(), l: 0.25 + 0.5 * Math.random() }).toRgbString();
+  this.strokeStyle = tinycolor({ h: ((this.ang + colorOffset) % Math.PI * 2) / Math.PI * 180, s: satMin + (satMax - satMin) * Math.random(), l: lumMin + (lumMax - lumMin)   * Math.random() }).toRgbString();
   this.alpha = 1;
 }
 
