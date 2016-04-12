@@ -143,8 +143,8 @@ var angSpeedMax = 0.0014;
 var distMax = 0;
 var distEndMin = 10;
 var distEndMax = 30;
-var distSpeedMin = 7;
-var distSpeedMax = 12;
+var distSpeedMin = 0.007;
+var distSpeedMax = 0.012;
 var circSpawnMin = 1;
 var circSpawnMax = 3;
 
@@ -155,6 +155,10 @@ var satMin = 0.25;
 var satMax = 0.75;
 var lumMin = 0.25;
 var lumMax = 0.75;
+
+var globalAlpha = 0;
+var globalScale = 0;
+var globalRot = -Math.PI * 4;
 
 function findCenter() {
   centerX = Math.floor(window.innerWidth / 2);
@@ -174,10 +178,10 @@ $(function() {
 
 window.requestAnimationFrame = window.requestAnimationFrame || function(callback){ window.setTimeout(callback, 16) };
 
-whCirc = function(ang, dist, rad) {
+whCirc = function(ang, rad) {
   this.ang = ang;
-  this.dist = dist;
-  this.angSpeed = angSpeedMin + Math.random() * (angSpeedMax - angSpeedMin) * (1 + Math.sin(+new Date()));
+  this.dist = 1;
+  this.angSpeed = angSpeedMin + Math.random() * (angSpeedMax - angSpeedMin);// * (1 + Math.sin((+new Date() % 1000) / 1000) * Math.PI * 2);
   this.distSpeed = distSpeedMin + Math.random() * (distSpeedMax - distSpeedMin);
   this.radMax = rad;
   this.rad = rad;
@@ -185,6 +189,17 @@ whCirc = function(ang, dist, rad) {
   this.y = 0;
   this.strokeStyle = tinycolor({ h: ((this.ang + colorOffset) % Math.PI * 2) / Math.PI * 180, s: satMin + (satMax - satMin) * Math.random(), l: lumMin + (lumMax - lumMin)   * Math.random() }).toRgbString();
   this.alpha = 1;
+}
+
+function easyEase(x, target, speed, snap) {
+  if (speed === undefined)
+    speed = 0.1;
+  var ret = x + (target - x) * speed;
+  if (snap === undefined)
+    snap = 0.001;
+  if (Math.abs(x - target) <= snap)
+    ret = target;
+  return ret;
 }
 
 var whCircs = [];
@@ -196,27 +211,36 @@ engine = function() {
   this.update = function() {
   
     colorOffset = (colorOffset + colorOffsetSpeed) % (Math.PI * 2);
-  
-    //loop over your objects and run each objects update function
-    for (let i = 0; i < Math.floor(Math.random() * (circSpawnMax - circSpawnMin)) + circSpawnMin; ++i)
-      whCircs.push(new whCirc(Math.random() * Math.PI * 2, distMax, radMin + Math.random() * (radMax - radMin)));
+    
+    if (connectedTo != null) {
+      for (let i = 0; i < Math.floor(Math.random() * (circSpawnMax - circSpawnMin)) + circSpawnMin; ++i)
+        whCircs.push(new whCirc(Math.random() * Math.PI * 2, radMin + Math.random() * (radMax - radMin)));
+      globalAlpha = easyEase(globalAlpha, 1, 0.01);
+      globalScale = easyEase(globalScale, 1, 0.01);
+      globalRot = easyEase(globalRot, 0, 0.03);
+    }
+    else {
+      globalAlpha = easyEase(globalAlpha, 0, 0.01);
+      globalScale = easyEase(globalScale, 0, 0.01);
+      globalRot = easyEase(globalRot, 0, 0.03);
+    }
     
     let i = whCircs.length;
     while (i--) {
-      let amt = whCircs[i].dist / distMax;
-      let amtSq = Math.sqrt(amt);
+      let amt = whCircs[i].dist;
+      let amtSq = Math.sqrt(amt * globalScale);
       whCircs[i].dist -= amtSq * whCircs[i].distSpeed;
       whCircs[i].ang -= Math.abs(3.5 - amt) * whCircs[i].angSpeed;
       whCircs[i].rad = amt * whCircs[i].radMax;
       whCircs[i].alpha = amtSq;
       
-      if (whCircs[i].dist < 10) {
+      if (whCircs[i].dist < 0) {
         whCircs.splice(i, 1);
         continue;
       }
       
-      whCircs[i].x = canvas.width / 2 + Math.cos(whCircs[i].ang) * whCircs[i].dist;
-      whCircs[i].y = canvas.height / 2 + Math.sin(whCircs[i].ang) * whCircs[i].dist;
+      whCircs[i].x = canvas.width / 2 + Math.cos(whCircs[i].ang + globalRot) * whCircs[i].dist * globalScale * distMax;
+      whCircs[i].y = canvas.height / 2 + Math.sin(whCircs[i].ang + globalRot) * whCircs[i].dist * globalScale * distMax;
     };
   }
 
@@ -231,11 +255,7 @@ engine = function() {
     
     
     for (let i = 0; i < whCircs.length; ++i) {
-      let theta = 0;
-      let dist = 10;
-      let ox = (canvas.width / 2) + Math.cos(theta) * dist;
-      let oy = (canvas.height / 2) + Math.sin(theta) * dist;
-      ctx.globalAlpha = whCircs[i].alpha;
+      ctx.globalAlpha = whCircs[i].alpha * globalAlpha;
       ctx.strokeStyle = whCircs[i].strokeStyle;
       ctx.beginPath();
       ctx.arc(whCircs[i].x, whCircs[i].y, whCircs[i].rad, 0, 2 * Math.PI);
