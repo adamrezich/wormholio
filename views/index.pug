@@ -12,9 +12,9 @@ html
     .container
       h1 <em>http://</em>wormhol.io<em>/</em><strong></strong>
       form(action='')
-        input#me(type='text', autocomplete='off', maxlength='7', size='7', disabled='disabled')
+        input#me(type='text', autocomplete='off', maxlength='8', size='8', disabled='disabled')
         button#connect(disabled='disabled') open
-        input#them(type='text', autocomplete='off', maxlength='7', size='7', disabled='disabled', value=code)
+        input#them(type='text', autocomplete='off', maxlength='8', size='8', disabled='disabled', value=code)
       #messages loading...
     #todo
       h2 explanation
@@ -36,8 +36,8 @@ html
         li check file size on client
         li check file size on server
         li auto-delete files after a couple minutes of not being used
-        li load a thumbnail of the file in before uploading (image data if image, otherwise generic icon)
-        li make cool wormhole animation thing
+        li load a thumbnail of the file in before uploading (image data if image, otherwise generic icon (with extension?))
+        li <s>make cool wormhole animation thing</s>
         li make files swirl into the middle of the wormhole when dropped
         li better CSS/animations/layout
         li allow multiple files at once (zip on server-side?)

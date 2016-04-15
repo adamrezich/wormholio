@@ -188,7 +188,8 @@ whCirc = function(ang, rad) {
   this.x = 0;
   this.y = 0;
   this.strokeStyle = tinycolor({ h: ((this.ang + colorOffset) % Math.PI * 2) / Math.PI * 180, s: satMin + (satMax - satMin) * Math.random(), l: lumMin + (lumMax - lumMin)   * Math.random() }).toRgbString();
-  this.alpha = 1;
+  this.alpha = 0;
+  this.fadingIn = true;
 }
 
 function easyEase(x, target, speed, snap) {
@@ -212,12 +213,13 @@ engine = function() {
   
     colorOffset = (colorOffset + colorOffsetSpeed) % (Math.PI * 2);
     
+    //if (true) {
     if (connectedTo != null) {
       for (let i = 0; i < Math.floor(Math.random() * (circSpawnMax - circSpawnMin)) + circSpawnMin; ++i)
         whCircs.push(new whCirc(Math.random() * Math.PI * 2, radMin + Math.random() * (radMax - radMin)));
-      globalAlpha = easyEase(globalAlpha, 1, 0.01);
+      globalAlpha = easyEase(globalAlpha, 1, 0.02);
       globalScale = easyEase(globalScale, 1, 0.01);
-      globalRot = easyEase(globalRot, 0, 0.03);
+      globalRot = easyEase(globalRot, 0, 0.045);
     }
     else {
       globalAlpha = easyEase(globalAlpha, 0, 0.01);
@@ -232,7 +234,14 @@ engine = function() {
       whCircs[i].dist -= amtSq * whCircs[i].distSpeed;
       whCircs[i].ang -= Math.abs(3.5 - amt) * whCircs[i].angSpeed;
       whCircs[i].rad = amt * whCircs[i].radMax;
-      whCircs[i].alpha = amtSq;
+      if (whCircs[i].fadingIn) {
+        whCircs[i].alpha = easyEase(whCircs[i].alpha, amtSq, 0.04);
+        if (whCircs[i].alpha >= 0.99)
+          whCircs[i].fadingIn = false;
+      }
+      else {
+        whCircs[i].alpha = amtSq;
+      }
       
       if (whCircs[i].dist < 0) {
         whCircs.splice(i, 1);
@@ -258,7 +267,7 @@ engine = function() {
       ctx.globalAlpha = whCircs[i].alpha * globalAlpha;
       ctx.strokeStyle = whCircs[i].strokeStyle;
       ctx.beginPath();
-      ctx.arc(whCircs[i].x, whCircs[i].y, whCircs[i].rad, 0, 2 * Math.PI);
+      ctx.arc(whCircs[i].x, whCircs[i].y, whCircs[i].rad * Math.sqrt(globalScale), 0, 2 * Math.PI);
       ctx.stroke();
     }
     ctx.globalAlpha = 1;

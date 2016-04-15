@@ -79,6 +79,11 @@ io.on('connection', function(socket) {
     }
     else {
       socket.emit('whoops');
+      console.log('ehh');
+      console.log(users);
+      console.log(other);
+      console.log(users[other]);
+      console.log(users[other].connectedTo);
     }
   });
   
